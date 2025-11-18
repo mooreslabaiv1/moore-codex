@@ -27,7 +27,6 @@ opentelemetry-otlp = { workspace = true, features = [
     "grpc-tonic",
     "http-proto",
     "http-json",
-    "reqwest",
     "reqwest-rustls",
 ], optional = true }
 opentelemetry-semantic-conventions = { workspace = true }

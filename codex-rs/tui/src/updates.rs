@@ -15,6 +15,13 @@ use std::path::PathBuf;
 use crate::version::CODEX_CLI_VERSION;
 
 pub fn get_upgrade_version(config: &Config) -> Option<String> {
+    // In this fork, CLI/TUI internet update checks are disabled by default to avoid
+    // talking to non-OpenAI endpoints (GitHub, Homebrew). Re-enable by setting
+    // CODEX_ENABLE_UPDATE_CHECKS in the environment.
+    if std::env::var_os("CODEX_ENABLE_UPDATE_CHECKS").is_none() {
+        return None;
+    }
+
     let version_file = version_filepath(config);
     let info = read_version_info(&version_file).ok();
 

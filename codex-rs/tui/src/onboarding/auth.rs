@@ -557,6 +557,19 @@ impl AuthModeWidget {
             return;
         }
 
+        // In this fork, OAuth-based ChatGPT login is disabled by default so we don't
+        // make HTTP requests to auth.openai.com. Re-enable by setting
+        // CODEX_ENABLE_OAUTH_LOGIN in the environment.
+        if std::env::var_os("CODEX_ENABLE_OAUTH_LOGIN").is_none() {
+            *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+            self.error = Some(
+                "ChatGPT login is disabled in this build. Use an OpenAI API key instead."
+                    .to_string(),
+            );
+            self.request_frame.schedule_frame();
+            return;
+        }
+
         self.error = None;
         let opts = ServerOptions::new(
             self.codex_home.clone(),

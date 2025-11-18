@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 codex-protocol = { workspace = true }
-sentry = { version = "0.34" }
+# Note: this fork drops the Sentry dependency so no HTTP uploads occur; feedback is local-only.
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]

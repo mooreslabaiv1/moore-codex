@@ -1,7 +1,7 @@
 [package]
+edition.workspace = true
 name = "codex-lmstudio"
 version.workspace = true
-edition.workspace = true
 
 [lib]
 name = "codex_lmstudio"
@@ -10,15 +10,20 @@ path = "src/lib.rs"
 
 [dependencies]
 codex-core = { path = "../core" }
-reqwest = { version = "0.12", features = ["json", "stream"] }
+# Explicitly use Rustls-only reqwest to avoid pulling in native-tls/OpenSSL in this fork.
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "stream",
+    "rustls-tls", # rustls is used instead of native-tls/OpenSSL
+] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt"] }
 tracing = { version = "0.1.41", features = ["log"] }
 which = "6.0"
 
 [dev-dependencies]
-wiremock = "0.6"
 tokio = { version = "1", features = ["full"] }
+wiremock = "0.6"
 
 [lints]
 workspace = true

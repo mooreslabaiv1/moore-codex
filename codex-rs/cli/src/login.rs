@@ -39,6 +39,8 @@ pub async fn login_with_chatgpt(
 pub async fn run_login_with_chatgpt(cli_config_overrides: CliConfigOverrides) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
 
+    ensure_oauth_login_enabled();
+
     if matches!(config.forced_login_method, Some(ForcedLoginMethod::Api)) {
         eprintln!("ChatGPT login is disabled. Use API key login instead.");
         std::process::exit(1);
@@ -125,6 +127,9 @@ pub async fn run_login_with_device_code(
     client_id: Option<String>,
 ) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
+
+    ensure_oauth_login_enabled();
+
     if matches!(config.forced_login_method, Some(ForcedLoginMethod::Api)) {
         eprintln!("ChatGPT login is disabled. Use API key login instead.");
         std::process::exit(1);
@@ -148,6 +153,18 @@ pub async fn run_login_with_device_code(
             eprintln!("Error logging in with device code: {e}");
             std::process::exit(1);
         }
+    }
+}
+
+/// Ensure OAuth-based ChatGPT login is enabled in this build.
+///
+/// In this fork, OAuth login is disabled by default so we don't make HTTP
+/// requests to auth.openai.com. Re-enable by setting CODEX_ENABLE_OAUTH_LOGIN
+/// in the environment.
+fn ensure_oauth_login_enabled() {
+    if std::env::var_os("CODEX_ENABLE_OAUTH_LOGIN").is_none() {
+        eprintln!("ChatGPT login is disabled in this build. Use API key login instead.");
+        std::process::exit(1);
     }
 }
 

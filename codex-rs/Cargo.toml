@@ -45,7 +45,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.0"
+version = "0.59.0"
 # Track the edition for all workspace crates in one place. Individual
 # crates can still override this value, but keeping it here means new
 # crates created with `cargo new -w ...` automatically inherit the 2024
@@ -145,7 +145,7 @@ multimap = "0.10.0"
 notify = "8.2.0"
 nucleo-matcher = "0.3.1"
 once_cell = "1"
-openssl-sys = "*"
+# openssl-sys = "*" # Avoiding OpenSSL to simplify compatibility.
 opentelemetry = "0.30.0"
 opentelemetry-appender-tracing = "0.30.0"
 opentelemetry-otlp = "0.30.0"
@@ -163,11 +163,14 @@ rand = "0.9"
 ratatui = "0.29.0"
 ratatui-macros = "0.6.0"
 regex-lite = "0.1.7"
-reqwest = "0.12"
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "json",
+    "stream",
+] }
 rmcp = { version = "0.8.5", default-features = false }
 schemars = "0.8.22"
 seccompiler = "0.5.0"
-sentry = "0.34.0"
 serde = "1"
 serde_json = "1"
 serde_with = "3.14"

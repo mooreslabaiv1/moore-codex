@@ -285,8 +285,10 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
                 base_url: std::env::var("OPENAI_BASE_URL")
                     .ok()
                     .filter(|v| !v.trim().is_empty()),
-                env_key: None,
-                env_key_instructions: None,
+                env_key: Some("OPENAI_API_KEY".to_string()),
+                env_key_instructions: Some(
+                    "Get your API key from https://platform.openai.com/api-keys".to_string(),
+                ),
                 experimental_bearer_token: None,
                 wire_api: WireApi::Responses,
                 query_params: None,
@@ -310,7 +312,7 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
                 request_max_retries: None,
                 stream_max_retries: None,
                 stream_idle_timeout_ms: None,
-                requires_openai_auth: true,
+                requires_openai_auth: false,
             },
         ),
         (
