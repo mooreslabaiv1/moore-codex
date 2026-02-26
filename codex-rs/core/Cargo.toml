@@ -121,13 +121,16 @@ seccompiler = { workspace = true }
 core-foundation = "0.9"
 keyring = { workspace = true, features = ["apple-native"] }
 
-# Build OpenSSL from source for musl builds.
-[target.x86_64-unknown-linux-musl.dependencies]
-openssl-sys = { workspace = true, features = ["vendored"] }
-
-# Build OpenSSL from source for musl builds.
-[target.aarch64-unknown-linux-musl.dependencies]
-openssl-sys = { workspace = true, features = ["vendored"] }
+# We are not currently building for MUSL in this fork. Keeping these disabled
+# avoids reintroducing OpenSSL via openssl-sys.
+#
+# # Build OpenSSL from source for musl builds.
+# [target.x86_64-unknown-linux-musl.dependencies]
+# openssl-sys = { workspace = true, features = ["vendored"] }
+#
+# # Build OpenSSL from source for musl builds.
+# [target.aarch64-unknown-linux-musl.dependencies]
+# openssl-sys = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { workspace = true, features = ["windows-native"] }
@@ -171,5 +174,3 @@ walkdir = { workspace = true }
 wiremock = { workspace = true }
 zstd = { workspace = true }
 
-[package.metadata.cargo-shear]
-ignored = ["openssl-sys"]

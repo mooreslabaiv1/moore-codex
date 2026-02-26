@@ -1,16 +1,13 @@
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-use std::collections::btree_map::Entry;
 use std::fs;
 use std::io::Write;
 use std::io::{self};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::Duration;
 
 use anyhow::Result;
-use anyhow::anyhow;
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::SessionSource;
 use tracing::Event;
@@ -22,9 +19,6 @@ use tracing_subscriber::fmt::writer::MakeWriter;
 use tracing_subscriber::registry::LookupSpan;
 
 const DEFAULT_MAX_BYTES: usize = 4 * 1024 * 1024; // 4 MiB
-const SENTRY_DSN: &str =
-    "https://ae32ed50620d7a7792c1ce5df38b3e3e@o33249.ingest.us.sentry.io/4510195390611458";
-const UPLOAD_TIMEOUT_SECS: u64 = 10;
 const FEEDBACK_TAGS_TARGET: &str = "feedback_tags";
 const MAX_FEEDBACK_TAGS: usize = 64;
 
@@ -218,136 +212,23 @@ impl CodexLogSnapshot {
         Ok(path)
     }
 
-    /// Upload feedback to Sentry with optional attachments.
+    /// No-op in this fork: remote feedback uploads are disabled.
+    ///
+    /// We preserve this method to keep the public API stable for call sites, but
+    /// intentionally do not send any logs to Sentry or other external services.
     pub fn upload_feedback(
         &self,
-        classification: &str,
-        reason: Option<&str>,
-        include_logs: bool,
-        extra_log_files: &[PathBuf],
-        session_source: Option<SessionSource>,
+        _classification: &str,
+        _reason: Option<&str>,
+        _include_logs: bool,
+        _extra_log_files: &[PathBuf],
+        _session_source: Option<SessionSource>,
     ) -> Result<()> {
-        use std::collections::BTreeMap;
-        use std::fs;
-        use std::str::FromStr;
-        use std::sync::Arc;
-
-        use sentry::Client;
-        use sentry::ClientOptions;
-        use sentry::protocol::Attachment;
-        use sentry::protocol::Envelope;
-        use sentry::protocol::EnvelopeItem;
-        use sentry::protocol::Event;
-        use sentry::protocol::Level;
-        use sentry::transports::DefaultTransportFactory;
-        use sentry::types::Dsn;
-
-        // Build Sentry client
-        let client = Client::from_config(ClientOptions {
-            dsn: Some(Dsn::from_str(SENTRY_DSN).map_err(|e| anyhow!("invalid DSN: {e}"))?),
-            transport: Some(Arc::new(DefaultTransportFactory {})),
-            ..Default::default()
-        });
-
-        let cli_version = env!("CARGO_PKG_VERSION");
-        let mut tags = BTreeMap::from([
-            (String::from("thread_id"), self.thread_id.to_string()),
-            (String::from("classification"), classification.to_string()),
-            (String::from("cli_version"), cli_version.to_string()),
-        ]);
-        if let Some(source) = session_source.as_ref() {
-            tags.insert(String::from("session_source"), source.to_string());
-        }
-        if let Some(r) = reason {
-            tags.insert(String::from("reason"), r.to_string());
-        }
-
-        let reserved = [
-            "thread_id",
-            "classification",
-            "cli_version",
-            "session_source",
-            "reason",
-        ];
-        for (key, value) in &self.tags {
-            if reserved.contains(&key.as_str()) {
-                continue;
-            }
-            if let Entry::Vacant(entry) = tags.entry(key.clone()) {
-                entry.insert(value.clone());
-            }
-        }
-
-        let level = match classification {
-            "bug" | "bad_result" | "safety_check" => Level::Error,
-            _ => Level::Info,
-        };
-
-        let mut envelope = Envelope::new();
-        let title = format!(
-            "[{}]: Codex session {}",
-            display_classification(classification),
-            self.thread_id
-        );
-
-        let mut event = Event {
-            level,
-            message: Some(title.clone()),
-            tags,
-            ..Default::default()
-        };
-        if let Some(r) = reason {
-            use sentry::protocol::Exception;
-            use sentry::protocol::Values;
-
-            event.exception = Values::from(vec![Exception {
-                ty: title.clone(),
-                value: Some(r.to_string()),
-                ..Default::default()
-            }]);
-        }
-        envelope.add_item(EnvelopeItem::Event(event));
-
-        if include_logs {
-            envelope.add_item(EnvelopeItem::Attachment(Attachment {
-                buffer: self.bytes.clone(),
-                filename: String::from("codex-logs.log"),
-                content_type: Some("text/plain".to_string()),
-                ty: None,
-            }));
-        }
-
-        for path in extra_log_files {
-            let data = match fs::read(path) {
-                Ok(data) => data,
-                Err(err) => {
-                    tracing::warn!(
-                        path = %path.display(),
-                        error = %err,
-                        "failed to read log attachment; skipping"
-                    );
-                    continue;
-                }
-            };
-            let fname = path
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_else(|| "extra-log.log".to_string());
-            let content_type = "text/plain".to_string();
-            envelope.add_item(EnvelopeItem::Attachment(Attachment {
-                buffer: data,
-                filename: fname,
-                content_type: Some(content_type),
-                ty: None,
-            }));
-        }
-
-        client.send_envelope(envelope);
-        client.flush(Some(Duration::from_secs(UPLOAD_TIMEOUT_SECS)));
         Ok(())
     }
 }
 
+#[allow(dead_code)]
 fn display_classification(classification: &str) -> String {
     match classification {
         "bug" => "Bug".to_string(),

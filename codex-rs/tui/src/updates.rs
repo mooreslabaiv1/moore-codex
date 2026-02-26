@@ -14,8 +14,16 @@ use std::path::PathBuf;
 
 use crate::version::CODEX_CLI_VERSION;
 
+const ENABLE_UPDATE_CHECKS_ENV_VAR: &str = "CODEX_ENABLE_UPDATE_CHECKS";
+
+fn should_run_network_update_checks(config: &Config) -> bool {
+    config.check_for_update_on_startup && std::env::var_os(ENABLE_UPDATE_CHECKS_ENV_VAR).is_some()
+}
+
 pub fn get_upgrade_version(config: &Config) -> Option<String> {
-    if !config.check_for_update_on_startup {
+    // In this fork, internet update checks are disabled by default to avoid
+    // non-OpenAI egress. Re-enable by setting CODEX_ENABLE_UPDATE_CHECKS.
+    if !should_run_network_update_checks(config) {
         return None;
     }
 
@@ -137,7 +145,7 @@ fn extract_version_from_latest_tag(latest_tag_name: &str) -> anyhow::Result<Stri
 /// Returns the latest version to show in a popup, if it should be shown.
 /// This respects the user's dismissal choice for the current latest version.
 pub fn get_upgrade_version_for_popup(config: &Config) -> Option<String> {
-    if !config.check_for_update_on_startup {
+    if !should_run_network_update_checks(config) {
         return None;
     }
 

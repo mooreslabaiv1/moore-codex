@@ -19,6 +19,8 @@ const CHATGPT_LOGIN_DISABLED_MESSAGE: &str =
 const API_KEY_LOGIN_DISABLED_MESSAGE: &str =
     "API key login is disabled. Use ChatGPT login instead.";
 const LOGIN_SUCCESS_MESSAGE: &str = "Successfully logged in";
+const OAUTH_LOGIN_DISABLED_MESSAGE: &str =
+    "ChatGPT OAuth login is disabled in this build. Use API key login instead.";
 
 fn print_login_server_start(actual_port: u16, auth_url: &str) {
     eprintln!(
@@ -46,6 +48,7 @@ pub async fn login_with_chatgpt(
 
 pub async fn run_login_with_chatgpt(cli_config_overrides: CliConfigOverrides) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
+    ensure_oauth_login_enabled();
 
     if matches!(config.forced_login_method, Some(ForcedLoginMethod::Api)) {
         eprintln!("{CHATGPT_LOGIN_DISABLED_MESSAGE}");
@@ -133,6 +136,7 @@ pub async fn run_login_with_device_code(
     client_id: Option<String>,
 ) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
+    ensure_oauth_login_enabled();
     if matches!(config.forced_login_method, Some(ForcedLoginMethod::Api)) {
         eprintln!("{CHATGPT_LOGIN_DISABLED_MESSAGE}");
         std::process::exit(1);
@@ -169,6 +173,7 @@ pub async fn run_login_with_device_code_fallback_to_browser(
     client_id: Option<String>,
 ) -> ! {
     let config = load_config_or_exit(cli_config_overrides).await;
+    ensure_oauth_login_enabled();
     if matches!(config.forced_login_method, Some(ForcedLoginMethod::Api)) {
         eprintln!("{CHATGPT_LOGIN_DISABLED_MESSAGE}");
         std::process::exit(1);
@@ -296,6 +301,15 @@ fn safe_format_key(key: &str) -> String {
     let prefix = &key[..8];
     let suffix = &key[key.len() - 5..];
     format!("{prefix}***{suffix}")
+}
+
+/// In this fork, OAuth login is disabled by default to avoid non-API OpenAI
+/// egress. Re-enable by setting CODEX_ENABLE_OAUTH_LOGIN.
+fn ensure_oauth_login_enabled() {
+    if std::env::var_os("CODEX_ENABLE_OAUTH_LOGIN").is_none() {
+        eprintln!("{OAUTH_LOGIN_DISABLED_MESSAGE}");
+        std::process::exit(1);
+    }
 }
 
 #[cfg(test)]

@@ -5,6 +5,7 @@ use rand::Rng;
 
 const ANNOUNCEMENT_TIP_URL: &str =
     "https://raw.githubusercontent.com/openai/codex/main/announcement_tip.toml";
+const ENABLE_UPDATE_CHECKS_ENV_VAR: &str = "CODEX_ENABLE_UPDATE_CHECKS";
 
 const IS_MACOS: bool = cfg!(target_os = "macos");
 
@@ -50,7 +51,9 @@ fn experimental_tooltips() -> Vec<&'static str> {
 pub(crate) fn get_tooltip(plan: Option<PlanType>) -> Option<String> {
     let mut rng = rand::rng();
 
-    if let Some(announcement) = announcement::fetch_announcement_tip() {
+    if std::env::var_os(ENABLE_UPDATE_CHECKS_ENV_VAR).is_some()
+        && let Some(announcement) = announcement::fetch_announcement_tip()
+    {
         return Some(announcement);
     }
 
@@ -98,6 +101,7 @@ fn pick_tooltip<R: Rng + ?Sized>(rng: &mut R) -> Option<&'static str> {
 
 pub(crate) mod announcement {
     use crate::tooltips::ANNOUNCEMENT_TIP_URL;
+    use crate::tooltips::ENABLE_UPDATE_CHECKS_ENV_VAR;
     use crate::version::CODEX_CLI_VERSION;
     use chrono::NaiveDate;
     use chrono::Utc;
@@ -111,6 +115,9 @@ pub(crate) mod announcement {
 
     /// Prewarm the cache of the announcement tip.
     pub(crate) fn prewarm() {
+        if std::env::var_os(ENABLE_UPDATE_CHECKS_ENV_VAR).is_none() {
+            return;
+        }
         let _ = thread::spawn(|| ANNOUNCEMENT_TIP.get_or_init(init_announcement_tip_in_thread));
     }
 

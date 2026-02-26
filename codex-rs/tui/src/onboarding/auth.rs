@@ -101,6 +101,8 @@ pub(crate) enum SignInOption {
 }
 
 const API_KEY_DISABLED_MESSAGE: &str = "API key login is disabled.";
+const OAUTH_LOGIN_DISABLED_MESSAGE: &str =
+    "ChatGPT login is disabled in this build. Use an OpenAI API key instead.";
 
 #[derive(Clone, Default)]
 pub(crate) struct ApiKeyInputState {
@@ -714,11 +716,25 @@ impl AuthModeWidget {
         }
     }
 
+    fn ensure_oauth_login_enabled(&mut self) -> bool {
+        if std::env::var_os("CODEX_ENABLE_OAUTH_LOGIN").is_some() {
+            return true;
+        }
+
+        *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+        self.error = Some(OAUTH_LOGIN_DISABLED_MESSAGE.to_string());
+        self.request_frame.schedule_frame();
+        false
+    }
+
     /// Kicks off the ChatGPT auth flow and keeps the UI state consistent with the attempt.
     fn start_chatgpt_login(&mut self) {
         // If we're already authenticated with ChatGPT, don't start a new login –
         // just proceed to the success message flow.
         if self.handle_existing_chatgpt_login() {
+            return;
+        }
+        if !self.ensure_oauth_login_enabled() {
             return;
         }
 
@@ -772,6 +788,9 @@ impl AuthModeWidget {
 
     fn start_device_code_login(&mut self) {
         if self.handle_existing_chatgpt_login() {
+            return;
+        }
+        if !self.ensure_oauth_login_enabled() {
             return;
         }
 
