@@ -40,6 +40,9 @@ docker run --rm \
     source "$HOME/.cargo/env" && \
 
     # Build the CLI binary
+    RUST_MIN_STACK=33554432 \
+    CARGO_PROFILE_RELEASE_LTO=thin \
+    CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 \
     cargo build -p codex-cli --release && \
 
     # Rename existing moore_codex to moore_codex_old
